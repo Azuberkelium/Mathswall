@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Connections</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0c0a09; /* Stone-900 */
+            color: #d6d3d1; /* Stone-300 */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1rem;
+            flex-direction: column;
+            text-align: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 64rem;
+        }
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+        .card {
+            background-color: #44403c; /* Stone-700 */
+            color: #f5f5f4; /* Stone-100 */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            user-select: none;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            height: 4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card:not(.solved):not(.selected):hover {
+            background-color: #57534e; /* Stone-600 */
+        }
+        .card.selected {
+            background-color: #eab308; /* Yellow-500 */
+            color: #1c1917; /* Stone-900 */
+        }
+        .card.solved {
+            cursor: default;
+            color: #1c1917;
+            background-color: #a3e635; /* Lime-400 */
+        }
+        .card.incorrect {
+            animation: shake 0.5s;
+            background-color: #dc2626; /* Red-600 */
+            color: white;
+        }
+        .category-group {
+            background-color: #292524; /* Stone-800 */
+            color: #d6d3d1;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            border-radius: 0.5rem;
+            border: 2px solid #57534e;
+        }
+        .category-group .category-title {
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .category-group .category-words {
+            font-size: 0.875rem;
+            color: #a8a29e;
+        }
+        .stats-bar {
+            background-color: #292524;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+        .lives-container {
+            display: flex;
+            gap: 0.25rem;
+        }
+        .life-icon {
+            width: 1.5rem;
+            height: 1.5rem;
+            fill: #dc2626; /* Red-600 */
+        }
+        .submit-button:disabled {
+            background-color: #78716c; /* Stone-500 */
+            cursor: not-allowed;
+        }
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal {
+            background-color: #292524;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            width: 90%;
+            max-width: 28rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            text-align: center;
+        }
+        .modal h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #eab308;
+        }
+        .modal p {
+            margin-top: 0.5rem;
+            color: #a8a29e;
+        }
+        .modal .play-again-button {
+            margin-top: 1.5rem;
+        }
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            20% { transform: translateX(-5px); }
+            40% { transform: translateX(5px); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="container">
+        <h1 class="text-4xl md:text-5xl font-extrabold text-white mb-2">Connections</h1>
+        <p class="text-md md:text-xl font-medium text-stone-400 mb-6">Find the groups that share a common link.</p>
+
+        <!-- Difficulty Selection Screen -->
+        <div id="difficulty-screen">
+            <h2 class="text-2xl font-bold mb-4 text-stone-300">Choose your difficulty:</h2>
+            <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+                <button id="easy-button" class="w-full md:w-1/3 bg-lime-500 text-stone-900 font-bold py-3 px-6 rounded-lg text-lg transition-all hover:bg-lime-600 focus:outline-none focus:ring-2 focus:ring-lime-500 focus:ring-offset-2">
+                    Easy
+                </button>
+                <button id="medium-button" class="w-full md:w-1/3 bg-yellow-500 text-stone-900 font-bold py-3 px-6 rounded-lg text-lg transition-all hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2">
+                    Medium
+                </button>
+                <button id="zubi-button" class="w-full md:w-1/3 bg-red-500 text-stone-900 font-bold py-3 px-6 rounded-lg text-lg transition-all hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                    Zubi (Hard)
+                </button>
+            </div>
+        </div>
+
+        <!-- Game Interface -->
+        <div id="game-interface" class="hidden">
+            <div class="stats-bar mb-4">
+                <div class="timer">
+                    <span id="timer">05:00</span>
+                </div>
+                <div class="lives">
+                    <div class="lives-container" id="lives-container">
+                        <svg class="life-icon" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        <svg class="life-icon" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                        <svg class="life-icon" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    </div>
+                </div>
+            </div>
+
+            <div id="solved-groups" class="mb-4"></div>
+            <div id="game-board" class="game-grid"></div>
+
+            <button id="submit-button" disabled class="submit-button w-full mt-4 bg-yellow-500 text-stone-900 font-bold py-3 px-6 rounded-lg text-lg transition-all hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2">
+                Submit
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal/Overlay for Game End -->
+    <div id="game-modal" class="overlay">
+        <div class="modal">
+            <h2 id="modal-title"></h2>
+            <p id="modal-message" class="mt-2 text-sm"></p>
+            <button id="play-again-button" class="play-again-button w-full bg-stone-700 text-stone-100 font-bold py-3 px-6 rounded-lg text-lg transition-all hover:bg-stone-600 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:ring-offset-2">
+                Play Again
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const easyButton = document.getElementById('easy-button');
+        const mediumButton = document.getElementById('medium-button');
+        const zubiButton = document.getElementById('zubi-button');
+        const difficultyScreen = document.getElementById('difficulty-screen');
+        const gameInterface = document.getElementById('game-interface');
+        const gameBoard = document.getElementById('game-board');
+        const submitButton = document.getElementById('submit-button');
+        const timerDisplay = document.getElementById('timer');
+        const livesContainer = document.getElementById('lives-container');
+        const solvedGroupsContainer = document.getElementById('solved-groups');
+        const gameModal = document.getElementById('game-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const playAgainButton = document.getElementById('play-again-button');
+
+        let allCategories = [
+            // Easy Categories
+            { category: 'Basic Operations', difficulty: 'Easy', words: ['Addition', 'Subtraction', 'Multiplication', 'Division'] },
+            { category: 'Polygons', difficulty: 'Easy', words: ['Triangle', 'Square', 'Pentagon', 'Hexagon'] },
+            { category: 'Counting by 10', difficulty: 'Easy', words: ['Ten', 'Twenty', 'Thirty', 'Forty'] },
+            { category: 'Types of Angles', difficulty: 'Easy', words: ['Right', 'Acute', 'Obtuse', 'Straight'] },
+            { category: 'Multiples of 5', difficulty: 'Easy', words: ['5', '10', '15', '20'] },
+            { category: 'Sums to 10', difficulty: 'Easy', words: ['6 + 4', '7 + 3', '8 + 2', '9 + 1'] },
+
+            // Medium Categories
+            { category: 'Greek Letters', difficulty: 'Medium', words: ['Alpha', 'Beta', 'Gamma', 'Delta'] },
+            { category: 'Prime Numbers', difficulty: 'Medium', words: ['Two', 'Three', 'Five', 'Seven'] },
+            { category: 'Units of Length', difficulty: 'Medium', words: ['Inch', 'Foot', 'Yard', 'Mile'] },
+            { category: 'Roman Numerals', difficulty: 'Medium', words: ['V', 'X', 'L', 'C'] },
+            { category: 'Square Numbers', difficulty: 'Medium', words: ['4', '9', '16', '25'] },
+            { category: 'Powers of 2', difficulty: 'Medium', words: ['2', '4', '8', '16'] },
+
+            // Zubi (Hard) Categories
+            { category: 'Types of Averages', difficulty: 'Zubi (Hard)', words: ['Mean', 'Median', 'Mode', 'Range'] },
+            { category: 'Geometry Terms', difficulty: 'Zubi (Hard)', words: ['Vertex', 'Edge', 'Face', 'Hypotenuse'] },
+            { category: 'Statistical Terms', difficulty: 'Zubi (Hard)', words: ['Sample', 'Population', 'Data', 'Probability'] },
+            { category: 'Mathematical Constants', difficulty: 'Zubi (Hard)', words: ['$\\pi$', 'e', '$\\phi$', 'i'] },
+            { category: 'Geometric Solids', difficulty: 'Zubi (Hard)', words: ['Cube', 'Sphere', 'Cylinder', 'Pyramid'] },
+            { category: 'Set Theory Terms', difficulty: 'Zubi (Hard)', words: ['Union', 'Intersection', 'Subset', 'Element'] },
+            { category: 'Numbers from square roots', difficulty: 'Zubi (Hard)', words: ['$\\sqrt{4}$', '$\\sqrt{9}$', '$\\sqrt{16}$', '$\\sqrt{25}$'] }
+        ];
+
+        let selectedWords = [];
+        let solvedGroups = [];
+        let lives = 3;
+        let timer = 300; // 5 minutes in seconds
+        let timerInterval;
+
+        const shuffleArray = (array) => {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        };
+
+        const initializeGame = (difficulty) => {
+            selectedWords = [];
+            solvedGroups = [];
+            lives = 3;
+            timer = 300;
+            updateLivesDisplay();
+            gameBoard.innerHTML = '';
+            solvedGroupsContainer.innerHTML = '';
+            submitButton.disabled = true;
+            gameModal.style.display = 'none';
+            stopTimer();
+
+            difficultyScreen.classList.add('hidden');
+            gameInterface.classList.remove('hidden');
+
+            const filteredCategories = allCategories.filter(cat => cat.difficulty === difficulty);
+            const shuffledCategories = shuffleArray([...filteredCategories]);
+            const selectedCategories = shuffledCategories.slice(0, 4);
+            const allWords = selectedCategories.flatMap(cat => cat.words);
+            const shuffledWords = shuffleArray(allWords);
+
+            shuffledWords.forEach(word => {
+                const card = document.createElement('div');
+                card.classList.add('card');
+                card.textContent = word;
+                card.dataset.word = word;
+                gameBoard.appendChild(card);
+            });
+            
+            // Attach event listeners for the new cards
+            document.querySelectorAll('.card').forEach(card => {
+                card.addEventListener('click', () => handleCardClick(card));
+            });
+
+            startTimer();
+        };
+
+        const handleCardClick = (card) => {
+            if (card.classList.contains('solved')) {
+                return;
+            }
+            card.classList.toggle('selected');
+            
+            if (card.classList.contains('selected')) {
+                selectedWords.push(card.dataset.word);
+            } else {
+                selectedWords = selectedWords.filter(word => word !== card.dataset.word);
+            }
+
+            // Enable or disable the submit button
+            submitButton.disabled = selectedWords.length !== 4;
+        };
+
+        const handleSubmit = () => {
+            const currentGuess = new Set(selectedWords.sort());
+            let isCorrect = false;
+            let foundCategory = null;
+
+            // Check if the guess matches any of the unsolved categories
+            for (const category of allCategories) {
+                const categoryWords = category.words.sort();
+                if (JSON.stringify(categoryWords) === JSON.stringify(Array.from(currentGuess))) {
+                    isCorrect = true;
+                    foundCategory = category;
+                    break;
+                }
+            }
+
+            if (isCorrect) {
+                // If correct, remove from unsolved and add to solved
+                const newSolvedGroup = { category: foundCategory.category, difficulty: foundCategory.difficulty, words: selectedWords.sort() };
+                solvedGroups.push(newSolvedGroup);
+
+                // Update the UI for correct words
+                document.querySelectorAll('.card').forEach(card => {
+                    if (selectedWords.includes(card.dataset.word)) {
+                        card.classList.remove('selected');
+                        card.classList.add('solved');
+                    }
+                });
+
+                // Display the solved group
+                displaySolvedGroup(newSolvedGroup.category, newSolvedGroup.words, newSolvedGroup.difficulty);
+            } else {
+                // If incorrect, shake the cards and decrement lives
+                lives--;
+                updateLivesDisplay();
+                document.querySelectorAll('.card.selected').forEach(card => {
+                    card.classList.add('incorrect');
+                    setTimeout(() => card.classList.remove('incorrect'), 500);
+                });
+            }
+
+            // Reset selected words and disable submit button
+            selectedWords.forEach(word => {
+                const card = document.querySelector(`.card[data-word="${word}"]`);
+                if (card) card.classList.remove('selected');
+            });
+            selectedWords = [];
+            submitButton.disabled = true;
+
+            // Check for game over conditions
+            if (solvedGroups.length === 2) {
+                endGame(true); // Win condition
+            } else if (lives === 0) {
+                endGame(false); // Lose condition
+            }
+        };
+
+        const displaySolvedGroup = (category, words, difficulty) => {
+            const groupDiv = document.createElement('div');
+            groupDiv.classList.add('category-group', 'rounded-lg', 'p-4', 'mb-2', `bg-${getDifficultyColor(difficulty)}-400/20`);
+            groupDiv.innerHTML = `
+                <div class="category-title font-bold text-lg">${category}</div>
+                <div class="category-words mt-1 text-sm">${words.join(', ')}</div>
+            `;
+            solvedGroupsContainer.appendChild(groupDiv);
+        };
+
+        const getDifficultyColor = (difficulty) => {
+            if (difficulty === 'Easy') return 'lime';
+            if (difficulty === 'Medium') return 'yellow';
+            if (difficulty === 'Zubi (Hard)') return 'red';
+            return 'gray';
+        };
+
+        const updateLivesDisplay = () => {
+            livesContainer.innerHTML = '';
+            for (let i = 0; i < lives; i++) {
+                const lifeIcon = document.createElement('svg');
+                lifeIcon.classList.add('life-icon');
+                lifeIcon.setAttribute('viewBox', '0 0 24 24');
+                lifeIcon.innerHTML = '<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>';
+                livesContainer.appendChild(lifeIcon);
+            }
+        };
+
+        const startTimer = () => {
+            timerInterval = setInterval(() => {
+                timer--;
+                const minutes = Math.floor(timer / 60);
+                const seconds = timer % 60;
+                timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                if (timer <= 0) {
+                    endGame(false);
+                }
+            }, 1000);
+        };
+
+        const stopTimer = () => {
+            clearInterval(timerInterval);
+        };
+
+        const endGame = (isWin) => {
+            stopTimer();
+            if (isWin) {
+                modalTitle.textContent = "You Win!";
+                modalMessage.textContent = "Congratulations! You found all the groups.";
+            } else {
+                modalTitle.textContent = "Game Over!";
+                modalMessage.innerHTML = "You ran out of lives or time. Here are the correct answers:";
+                
+                // Show remaining categories
+                const remainingWords = Array.from(document.querySelectorAll('.card:not(.solved)')).map(card => card.dataset.word);
+                const remainingCategories = allCategories.filter(cat => {
+                    const wordSet = new Set(cat.words);
+                    return cat.words.some(word => remainingWords.includes(word));
+                });
+
+                if (remainingCategories.length > 0) {
+                    const ul = document.createElement('ul');
+                    ul.classList.add('list-none', 'p-0', 'mt-4', 'text-left');
+                    remainingCategories.forEach(cat => {
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span class="font-bold">${cat.category}:</span> ${cat.words.join(', ')}`;
+                        ul.appendChild(li);
+                    });
+                    modalMessage.appendChild(ul);
+                }
+            }
+            gameModal.style.display = 'flex';
+        };
+
+        submitButton.addEventListener('click', handleSubmit);
+        playAgainButton.addEventListener('click', () => {
+            gameModal.style.display = 'none';
+            difficultyScreen.classList.remove('hidden');
+            gameInterface.classList.add('hidden');
+        });
+
+        easyButton.addEventListener('click', () => initializeGame('Easy'));
+        mediumButton.addEventListener('click', () => initializeGame('Medium'));
+        zubiButton.addEventListener('click', () => initializeGame('Zubi (Hard)'));
+
+    </script>
+</body>
+</html>
